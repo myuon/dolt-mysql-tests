@@ -71,8 +71,6 @@ select JSON_VALID('123');
 JSON_VALID('123')
 1
 set names 'utf8';
-Warnings:
-Warning	3719	'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous.
 
 # Json expression
 select JSON_VALID(cast('[123]' as JSON ));
@@ -100,8 +98,6 @@ select JSON_VALID( UPPER('"abc"') );
 JSON_VALID( UPPER('"abc"') )
 1
 set names 'utf8';
-Warnings:
-Warning	3719	'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous.
 
 # Function result - date, not valid as JSON without CAST
 select JSON_VALID( CAST('2015-01-15' AS DATE) );
@@ -112,8 +108,6 @@ JSON_VALID( CAST('2015-01-15' AS DATE) )
 select JSON_VALID( CAST(CAST('2015-01-15' AS DATE) as CHAR CHARACTER SET 'utf8') );
 JSON_VALID( CAST(CAST('2015-01-15' AS DATE) as CHAR CHARACTER SET 'utf8') )
 0
-Warnings:
-Warning	3719	'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous.
 # OK, though:
 select JSON_VALID( CAST(CURDATE() as JSON) );
 JSON_VALID( CAST(CURDATE() as JSON) )
@@ -555,7 +549,7 @@ SELECT JSON_DEPTH
 (
 '[ "a", true, "b" , { "e" : false }, "c" , null'
 );
-ERROR 22032: Invalid JSON text in argument 1 to function json_depth: "Missing a comma or ']' after an array element." at position 46.
+ERROR 22032: Invalid JSON text in argument 1 to function json_depth: "Invalid value." at position 0.
 # ----------------------------------------------------------------------
 # Test of JSON_REMOVE function.
 # ----------------------------------------------------------------------
@@ -645,7 +639,7 @@ select json_remove( '[ { "a": true }, { "b": [ { "c": { "a": true } }  ] }, { "c
 ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
 select json_remove( '{"id": 123, "name": "systemQA", "array": [1, 2, 3]}', '$[0]' );
 json_remove( '{"id": 123, "name": "systemQA", "array": [1, 2, 3]}', '$[0]' )
-{"id": 123, "name": "systemQA", "array": [1, 2, 3]}
+{"array": [1, 2, 3], "id": 123, "name": "systemQA"}
 SELECT JSON_REMOVE
 (
 '{"a" : "foo", "b" : [true, {"c" : 123}]}',
@@ -910,13 +904,13 @@ ERROR 22032: Invalid JSON text in argument 1 to function json_type: "The documen
 # ----------------------------------------------------------------------
 select json_type(cast(cast('2014-11-25 18:00' as datetime) as json));
 json_type(cast(cast('2014-11-25 18:00' as datetime) as json))
-DATETIME
+STRING
 select json_type(cast(cast('2014-11-25' as date) as json));
 json_type(cast(cast('2014-11-25' as date) as json))
-DATE
+STRING
 select json_type(cast(cast('18:00:59' as time) as json));
 json_type(cast(cast('18:00:59' as time) as json))
-TIME
+STRING
 select json_type(cast(127 as json));
 json_type(cast(127 as json))
 INTEGER
@@ -943,39 +937,39 @@ json_type(cast(4294967295 as json))
 INTEGER
 select json_type(cast(9223372036854775807 as json));
 json_type(cast(9223372036854775807 as json))
-INTEGER
+DOUBLE
 select json_type(cast(18446744073709551615 as json));
 json_type(cast(18446744073709551615 as json))
-UNSIGNED INTEGER
+DOUBLE
 select json_type(cast(true as json));
 json_type(cast(true as json))
 BOOLEAN
 select json_type(cast(b'10101' as json));
 json_type(cast(b'10101' as json))
-BLOB
+INTEGER
 select json_type(cast(cast(3.14 as decimal(5,2)) as json));
 json_type(cast(cast(3.14 as decimal(5,2)) as json))
-DECIMAL
+DOUBLE
 select json_type(cast(3.14 as json));
 json_type(cast(3.14 as json))
-DECIMAL
+DOUBLE
 select json_type(cast(3.14E30 as json));
 json_type(cast(3.14E30 as json))
 DOUBLE
 select json_type(cast(cast('10101abcde' as binary) as json));
 json_type(cast(cast('10101abcde' as binary) as json))
-BLOB
+STRING
 select json_type(cast(ST_GeomFromText('POINT(1 1)') as json));
 json_type(cast(ST_GeomFromText('POINT(1 1)') as json))
-OBJECT
+STRING
 select json_type(cast(ST_GeomFromText('LINESTRING(0 0,1 1,2 2)') as json));
 json_type(cast(ST_GeomFromText('LINESTRING(0 0,1 1,2 2)') as json))
-OBJECT
+STRING
 select json_type(cast(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0),
                                      (5 5,7 5,7 7,5 7, 5 5))') as json));
 json_type(cast(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0),
-                                     (5 5,7 5,7 7,5 7, 5 5))') as json))
-OBJECT
+(5 5,7 5,7 7,5 7, 5 5))') as json))
+STRING
 select json_type(cast(null as json));
 json_type(cast(null as json))
 NULL
@@ -987,13 +981,13 @@ json_type(null) is null
 1
 select cast(cast('2014-11-25 18:00' as datetime) as json);
 cast(cast('2014-11-25 18:00' as datetime) as json)
-"2014-11-25 18:00:00.000000"
+"2014-11-25 18:00"
 select cast(cast('2014-11-25' as date) as json);
 cast(cast('2014-11-25' as date) as json)
 "2014-11-25"
 select cast(cast('18:00:59' as time) as json);
 cast(cast('18:00:59' as time) as json)
-"18:00:59.000000"
+"18:00:59"
 select cast(127 as json);
 cast(127 as json)
 127
@@ -1020,16 +1014,16 @@ cast(4294967295 as json)
 4294967295
 select cast(9223372036854775807 as json);
 cast(9223372036854775807 as json)
-9223372036854775807
+9223372036854776000
 select cast(18446744073709551615 as json);
 cast(18446744073709551615 as json)
-18446744073709551615
+18446744073709552000
 select cast(true as json);
 cast(true as json)
 true
 select cast(b'10101' as json);
 cast(b'10101' as json)
-"base64:type15:FQ=="
+21
 select cast(cast(3.14 as decimal(5,2)) as json);
 cast(cast(3.14 as decimal(5,2)) as json)
 3.14
@@ -1041,18 +1035,18 @@ cast(3.14e0 as json)
 3.14
 select cast(cast('10101abcde' as binary) as json);
 cast(cast('10101abcde' as binary) as json)
-"base64:type15:MTAxMDFhYmNkZQ=="
+"10101abcde"
 select cast(ST_GeomFromText('POINT(1 1)') as json);
 cast(ST_GeomFromText('POINT(1 1)') as json)
-{"type": "Point", "coordinates": [1.0, 1.0]}
+"POINT(1 1)"
 select cast(ST_GeomFromText('LINESTRING(0 0,1 1,2 2)') as json);
 cast(ST_GeomFromText('LINESTRING(0 0,1 1,2 2)') as json)
-{"type": "LineString", "coordinates": [[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]]}
+"LINESTRING(0 0,1 1,2 2)"
 select cast(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0),
                                      (5 5,7 5,7 7,5 7, 5 5))') as json);
 cast(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0),
-                                     (5 5,7 5,7 7,5 7, 5 5))') as json)
-{"type": "Polygon", "coordinates": [[[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0], [0.0, 0.0]], [[5.0, 5.0], [7.0, 5.0], [7.0, 7.0], [5.0, 7.0], [5.0, 5.0]]]}
+(5 5,7 5,7 7,5 7, 5 5))') as json)
+"POLYGON((0 0,10 0,10 10,0 10,0 0),\n(5 5,7 5,7 7,5 7, 5 5))"
 select cast(null as json);
 cast(null as json)
 NULL
@@ -1137,9 +1131,9 @@ JSON_KEYS
 )
 NULL
 SELECT JSON_KEYS();
-ERROR 42000: Incorrect parameter count in the call to native function 'JSON_KEYS'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SELECT JSON_KEYS()' at line 1
 SELECT JSON_KEYS('{}', '$', '$');
-ERROR 42000: Incorrect parameter count in the call to native function 'JSON_KEYS'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SELECT JSON_KEYS('{}', '$', '$')' at line 1
 # ----------------------------------------------------------------------
 # CAST(<json> AS CHAR). See also 'json_conversions.test' for other
 # conversion tests.
@@ -1167,7 +1161,7 @@ json_extract( '{ "\\"a\\"": 1}', '$."a"' )
 NULL
 select json_extract( '{ "\\"a\\"": 1}', '$."\\"a\\""' );
 json_extract( '{ "\\"a\\"": 1}', '$."\\"a\\""' )
-1
+NULL
 select json_extract( '{ "a": 1}', '$."a"' );
 json_extract( '{ "a": 1}', '$."a"' )
 1
@@ -1202,13 +1196,13 @@ json_extract( '{ "a": [ [ 3, 2 ], [ { "c" : "d" }, 1 ] ], "b": { "c" : 6 }, "one
 # Test of JSON_EXTRACT function.
 # ----------------------------------------------------------------------
 select json_extract(NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_extract'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_extract(NULL)' at line 1
 select json_extract('$.b');
-ERROR 42000: Incorrect parameter count in the call to native function 'json_extract'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_extract('$.b')' at line 1
 select json_extract('{"a": 1, "b": {"e": "foo", "b": 3}}');
-ERROR 42000: Incorrect parameter count in the call to native function 'json_extract'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_extract('{"a": 1, "b": {"e": "foo", "b": 3}}')' at line 1
 select json_extract('$.a', '{"a": 1, "b": {"e": "foo", "b": 3}}');
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Invalid value." at position 0.
+ERROR 42000: invalid JSON value: $.a
 select json_extract(NULL, '$.b');
 json_extract(NULL, '$.b')
 NULL
@@ -1235,34 +1229,36 @@ SELECT JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : "123" } ] }',
 '$.b[ 1 ].c');
 JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : "123" } ] }',
 '$.b[ 1 ].c')
-"123"
+NULL
 # returns a JSON value containing just the number 123
 SELECT JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
 '$.b[ 1 ].c');
 JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
 '$.b[ 1 ].c')
-123
+NULL
 # raises an error because the document is not valid
 SELECT JSON_EXTRACT('{ "a" : [ }',
 '$.b[ 1 ].c');
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Invalid value." at position 10.
+ERROR 42000: invalid JSON value: { "a" : [ }
 # raises an error because the path is invalid
 SELECT JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
 '$.b[ 1 ].');
-ERROR 42000: Invalid JSON path expression. The error is around character position 9.
+JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
+'$.b[ 1 ].')
+NULL
 # returns a JSON value containing the number 123 (because of
 # auto-wrapping the scalar)
 SELECT JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
 '$.b[ 1 ].c[ 0 ]');
 JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
 '$.b[ 1 ].c[ 0 ]')
-123
+NULL
 # returns a JSON value containing the object because of auto-wrapping
 SELECT JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : {"not array": 4} } ] }',
 '$.b[ 1 ].c[ 0 ]');
 JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : {"not array": 4} } ] }',
 '$.b[ 1 ].c[ 0 ]')
-{"not array": 4}
+NULL
 # returns null because the path, although valid, does not identify a value
 SELECT JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
 '$.b[ 1 ].c[ 1 ]');
@@ -1274,7 +1270,7 @@ SELECT JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123, "c" : 456 } ] }',
 '$.b[ 1 ].c');
 JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123, "c" : 456 } ] }',
 '$.b[ 1 ].c')
-456
+NULL
 # returns a JSON array [ "foo", true ]
 SELECT JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123, "c" : 456 } ] }',
 '$.a', '$.b[0]');
@@ -1286,7 +1282,7 @@ SELECT JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123, "c" : 456 } ] }',
 '$.d', '$.b[0]');
 JSON_EXTRACT('{ "a" : "foo", "b" : [ true, { "c" : 123, "c" : 456 } ] }',
 '$.d', '$.b[0]')
-[true]
+[null, true]
 # Some examples verifying ellipsis behavior.
 # Should have the same result, apart from wrapping.
 select json_extract( '[1]', '$[0][0]' );
@@ -1294,13 +1290,13 @@ json_extract( '[1]', '$[0][0]' )
 1
 select json_extract( '[1]', '$**[0]' );
 json_extract( '[1]', '$**[0]' )
-[1]
+[1, 1]
 select json_extract( '[1]', '$[last][last]' );
 json_extract( '[1]', '$[last][last]' )
-1
+NULL
 select json_extract( '[1]', '$**[last]' );
 json_extract( '[1]', '$**[last]' )
-[1]
+NULL
 # Should have the same result.
 select json_extract( '{ "a": 1 }', '$**[0]' );
 json_extract( '{ "a": 1 }', '$**[0]' )
@@ -1313,24 +1309,24 @@ json_extract( '{ "a": 1 }', '$[0]', '$[0].a[0]' )
 [{"a": 1}, 1]
 select json_extract( '{ "a": 1 }', '$**[last]' );
 json_extract( '{ "a": 1 }', '$**[last]' )
-[{"a": 1}, 1]
+NULL
 select json_extract( '{ "a": 1 }', '$[last]', '$.a[last]' );
 json_extract( '{ "a": 1 }', '$[last]', '$.a[last]' )
-[{"a": 1}, 1]
+[null, null]
 # Should have the same result, apart from wrapping.
 select json_extract( '{ "a": 1 }', '$**.a' );
 json_extract( '{ "a": 1 }', '$**.a' )
-[1]
+1
 select json_extract( '{ "a": 1 }', '$[0].a' );
 json_extract( '{ "a": 1 }', '$[0].a' )
 1
 select json_extract( '{ "a": 1 }', '$[last].a' );
 json_extract( '{ "a": 1 }', '$[last].a' )
-1
+NULL
 # Should have the same result, apart from wrapping.
 select json_extract( '{ "a": 1 }', '$**.a' );
 json_extract( '{ "a": 1 }', '$**.a' )
-[1]
+1
 select json_extract( '{ "a": 1 }', '$[0].a' );
 json_extract( '{ "a": 1 }', '$[0].a' )
 1
@@ -1342,17 +1338,17 @@ json_extract( '{ "a": 1 }', '$[0][0][0].a' )
 1
 select json_extract( '{ "a": 1 }', '$[last].a' );
 json_extract( '{ "a": 1 }', '$[last].a' )
-1
+NULL
 select json_extract( '{ "a": 1 }', '$[last][last].a' );
 json_extract( '{ "a": 1 }', '$[last][last].a' )
-1
+NULL
 select json_extract( '{ "a": 1 }', '$[last][last][last].a' );
 json_extract( '{ "a": 1 }', '$[last][last][last].a' )
-1
+NULL
 # Should have the same result.
 SELECT JSON_EXTRACT('[1, [[{"x": [{"a":{"b":{"c":42}}}]}]]]', '$**.a.*');
 JSON_EXTRACT('[1, [[{"x": [{"a":{"b":{"c":42}}}]}]]]', '$**.a.*')
-[{"c": 42}]
+{"c": 42}
 SELECT JSON_EXTRACT('[1, [[{"x": [{"a":{"b":{"c":42}}}]}]]]',
 '$[1][0][0].x[0].a.*');
 JSON_EXTRACT('[1, [[{"x": [{"a":{"b":{"c":42}}}]}]]]',
@@ -1360,22 +1356,22 @@ JSON_EXTRACT('[1, [[{"x": [{"a":{"b":{"c":42}}}]}]]]',
 [{"c": 42}]
 SELECT JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[0]');
 JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[0]')
-[[0, 1], 0, 1, 2, 3, 4, 5, 6]
+[[0, 1], 0, 0, 1, 2, 2, 3, 4, 4, 5, 5, 6]
 SELECT JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[1]');
 JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[1]')
 [[2, 3], 1, 3, [5, 6], 6]
 SELECT JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[2]');
 JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[2]')
-[[4, [5, 6]]]
+[4, [5, 6]]
 SELECT JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[3]');
 JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[3]')
 NULL
 SELECT JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[*]');
 JSON_EXTRACT('[[0,1],[2,3],[4,[5,6]]]', '$**[*]')
-[[0, 1], [2, 3], [4, [5, 6]], 0, 1, 2, 3, 4, [5, 6], 5, 6]
+[[[0, 1], [2, 3], [4, [5, 6]]], 0, 1, 2, 3, [4, [5, 6]], 5, 6]
 SELECT JSON_EXTRACT('[1,2,[3,4,[5,6,{"a":7}]]]', '$**[*]**[0]');
 JSON_EXTRACT('[1,2,[3,4,[5,6,{"a":7}]]]', '$**[*]**[0]')
-[1, 2, 3, 4, 5, 6, {"a": 7}, 7]
+[[1, 2, [3, 3, 4, 5, 5, 6, {"a": 7}, 7]], [3, 4, [5, 5, 6, {"a": 7}, 7]], 5, 6, [{"a": 7}, 7]]
 SELECT JSON_EXTRACT
 (
 '{ "a" : "foo", "b" : [ true, { "c" : "123" } ] }',
@@ -1386,7 +1382,7 @@ JSON_EXTRACT
 '{ "a" : "foo", "b" : [ true, { "c" : "123" } ] }',
 '$.b[ 1 ].c'
 )
-"123"
+NULL
 SELECT JSON_EXTRACT
 (
 '{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
@@ -1397,19 +1393,24 @@ JSON_EXTRACT
 '{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
 '$.b[ 1 ].c'
 )
-123
+NULL
 SELECT JSON_EXTRACT
 (
 '{ "a" : [ }',
 '$.b[ 1 ].c'
 );
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Invalid value." at position 10.
+ERROR 42000: invalid JSON value: { "a" : [ }
 SELECT JSON_EXTRACT
 (
 '{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
 '$.b[ 1 ].'
 );
-ERROR 42000: Invalid JSON path expression. The error is around character position 9.
+JSON_EXTRACT
+(
+'{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
+'$.b[ 1 ].'
+)
+NULL
 SELECT JSON_EXTRACT
 (
 '{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
@@ -1420,7 +1421,7 @@ JSON_EXTRACT
 '{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
 '$.b[ 1 ].c[ 0 ]'
 )
-123
+NULL
 SELECT JSON_EXTRACT
 (
 '{ "a" : "foo", "b" : [ true, { "c" : 123 } ] }',
@@ -1442,7 +1443,7 @@ JSON_EXTRACT
 '{ "a" : "foo", "b" : [ true, { "c" : 123, "c" : 456 } ] }',
 '$.b[ 1 ].c'
 )
-456
+NULL
 SELECT JSON_EXTRACT
 (
 '{ "a" : "foo", "b" : [ true, { "c" : 123, "c" : 456 } ] }',
@@ -1464,10 +1465,10 @@ JSON_EXTRACT
 '{ "a" : "foo", "b" : [ true, { "c" : 123, "c" : 456 } ] }',
 '$.d', '$.b[0]'
 )
-[true]
+[null, true]
 select json_extract( '[ { "a": 1 }, { "a": 2 } ]', '$[*].b' ) jdoc;
 jdoc
-NULL
+[]
 select json_extract( '[ { "a": 1 }, { "a": 2 } ]', '$[0].b' ) jdoc;
 jdoc
 NULL
@@ -1488,7 +1489,7 @@ jdoc
 [[3, 4]]
 select json_extract( '[ { "a": [3,4] }, { "b": 2 } ]', '$[0].a', '$[1].a' ) jdoc;
 jdoc
-[[3, 4]]
+[[3, 4], null]
 # ----------------------------------------------------------------------
 # Test of JSON_ARRAY_APPEND function.
 # ----------------------------------------------------------------------
@@ -1497,16 +1498,16 @@ json_array_append(NULL, '$.b', cast(1 as json))
 NULL
 select json_array_append('[1,2,3]', NULL, cast(1 as json));
 json_array_append('[1,2,3]', NULL, cast(1 as json))
-NULL
+[1, 2, 3]
 select json_array_append('[1,2,3]', '$', NULL);
 json_array_append('[1,2,3]', '$', NULL)
 [1, 2, 3, null]
 select json_array_append(NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_array_append'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_array_append(NULL)' at line 1
 select json_array_append(NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_array_append'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_array_append(NULL, NULL)' at line 1
 select json_array_append(NULL, NULL, NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_array_append'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_array_append(NULL, NULL, NULL, NULL)' at line 1
 SELECT JSON_ARRAY_APPEND(cast('1' as json), '$', 3);
 JSON_ARRAY_APPEND(cast('1' as json), '$', 3)
 [1, 3]
@@ -1515,11 +1516,13 @@ JSON_ARRAY_APPEND(cast('{"a": 3}' as json), '$', 3)
 [{"a": 3}, 3]
 SELECT JSON_ARRAY_APPEND('1', '$[0]', 3);
 JSON_ARRAY_APPEND('1', '$[0]', 3)
-[1, 3]
+1
 select json_array_append(cast('{"a": {"b": [3]}}' as json), '$**[0]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_array_append(cast('{"a": {"b": [3]}}' as json), '$**[0]', 6)
+{"a": {"b": [3]}}
 SELECT JSON_ARRAY_APPEND('1', '$[0 to 1]', 3);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+JSON_ARRAY_APPEND('1', '$[0 to 1]', 3)
+1
 # Auto-wrapping, since because the paths identify scalars.
 # should return {"a": "foo", "b": ["bar", 4], "c": ["wibble", "grape"]}
 SELECT JSON_ARRAY_APPEND('{"a": "foo", "b": "bar", "c": "wibble"}',
@@ -1546,9 +1549,11 @@ JSON_ARRAY_APPEND('{"a" : "foo","b": [1, 2, 3], "c": ["apple", "pear"]}',
 '$.c', 'grape')
 {"a": "foo", "b": [1, 2, 3, 4], "c": ["apple", "pear", "grape"]}
 select json_array_append( '[[], [], []]', '$[*]', 3, '$[*]', 4);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_array_append( '[[], [], []]', '$[*]', 3, '$[*]', 4)
+[[], [], []]
 select json_array_append( '[[], "not array", []]', '$[*]', 3, '$[*]', 4);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_array_append( '[[], "not array", []]', '$[*]', 3, '$[*]', 4)
+[[], "not array", []]
 SELECT JSON_ARRAY_APPEND
 (
 '{ "a" : "foo", "b" : "bar", "c" : "wibble" }',
@@ -1580,13 +1585,13 @@ JSON_ARRAY_APPEND
 # ----------------------------------------------------------------------
 select json_array_append('{"a":1}', '$[0]', 100);
 json_array_append('{"a":1}', '$[0]', 100)
-[{"a": 1}, 100]
+{"a": 1}
 select json_array_append('3', '$[0]', 100);
 json_array_append('3', '$[0]', 100)
-[3, 100]
+3
 select json_array_append('3', '$[0][0][0][0]', 100);
 json_array_append('3', '$[0][0][0][0]', 100)
-[3, 100]
+3
 # ----------------------------------------------------------------------
 # Test of JSON_INSERT function.
 # ----------------------------------------------------------------------
@@ -1595,16 +1600,16 @@ json_insert(NULL, '$.b', cast(1 as json))
 NULL
 select json_insert('[1,2,3]', NULL, cast(1 as json));
 json_insert('[1,2,3]', NULL, cast(1 as json))
-NULL
+[1, 2, 3]
 select json_insert('[1,2,3]', '$[3]', NULL);
 json_insert('[1,2,3]', '$[3]', NULL)
 [1, 2, 3, null]
 select json_insert(NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_insert'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_insert(NULL)' at line 1
 select json_insert(NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_insert'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_insert(NULL, NULL)' at line 1
 select json_insert(NULL, NULL, NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_insert'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_insert(NULL, NULL, NULL, NULL)' at line 1
 select json_insert('[1,2,3]', '$[0]', 4);
 json_insert('[1,2,3]', '$[0]', 4)
 [1, 2, 3]
@@ -1631,10 +1636,10 @@ json_insert('[1,2,3]', '$[last-2]', 4)
 [1, 2, 3]
 select json_insert('[1,2,3]', '$[last-3]', 4);
 json_insert('[1,2,3]', '$[last-3]', 4)
-[4, 1, 2, 3]
+[1, 2, 3]
 select json_insert('[1,2,3]', '$[last-10]', 4);
 json_insert('[1,2,3]', '$[last-10]', 4)
-[4, 1, 2, 3]
+[1, 2, 3]
 select json_insert('[]', '$[0]', 1);
 json_insert('[]', '$[0]', 1)
 [1]
@@ -1643,10 +1648,10 @@ json_insert('[]', '$[1]', 1)
 [1]
 select json_insert('[]', '$[last]', 1);
 json_insert('[]', '$[last]', 1)
-[1]
+[]
 select json_insert('[]', '$[last-1]', 1);
 json_insert('[]', '$[last-1]', 1)
-[1]
+[]
 select json_insert('{"c":4}', '$.c', 4);
 json_insert('{"c":4}', '$.c', 4)
 {"c": 4}
@@ -1661,78 +1666,91 @@ json_insert('1', '$[0]', 4)
 1
 select json_insert('1', '$[1]', 4);
 json_insert('1', '$[1]', 4)
-[1, 4]
+1
 select json_insert('1', '$[10]', '4', '$[11]', 5);
 json_insert('1', '$[10]', '4', '$[11]', 5)
-[1, "4", 5]
+1
 select json_insert('1', '$[last]', 4);
 json_insert('1', '$[last]', 4)
 1
 select json_insert('1', '$[last-1]', 4);
 json_insert('1', '$[last-1]', 4)
-[4, 1]
+1
 select json_insert('1', '$[last-10]', '4', '$[last-11]', 5);
 json_insert('1', '$[last-10]', '4', '$[last-11]', 5)
-[5, "4", 1]
+1
 select json_insert('[1,2,3]', '$[2][0]', 4);
 json_insert('[1,2,3]', '$[2][0]', 4)
 [1, 2, 3]
 select json_insert('[1,2,3]', '$[2][1]', 4);
 json_insert('[1,2,3]', '$[2][1]', 4)
-[1, 2, [3, 4]]
+[1, 2, 3]
 select json_insert('[1,2,3]', '$[2][2]', 4);
 json_insert('[1,2,3]', '$[2][2]', 4)
-[1, 2, [3, 4]]
+[1, 2, 3]
 select json_insert('[1,2,3]', '$[2][last]', 4);
 json_insert('[1,2,3]', '$[2][last]', 4)
 [1, 2, 3]
 select json_insert('[1,2,3]', '$[2][last-1]', 4);
 json_insert('[1,2,3]', '$[2][last-1]', 4)
-[1, 2, [4, 3]]
+[1, 2, 3]
 select json_insert('[1,2,3]', '$[2][last-2]', 4);
 json_insert('[1,2,3]', '$[2][last-2]', 4)
-[1, 2, [4, 3]]
+[1, 2, 3]
 select json_insert('{"a": 3}', '$.a[0]', 4);
 json_insert('{"a": 3}', '$.a[0]', 4)
 {"a": 3}
 select json_insert('{"a": 3}', '$.a[1]', 4, '$.a[2]', '5');
 json_insert('{"a": 3}', '$.a[1]', 4, '$.a[2]', '5')
-{"a": [3, 4, "5"]}
+{"a": 3}
 select json_insert('{"a": 3}', '$.a[last]', 4);
 json_insert('{"a": 3}', '$.a[last]', 4)
 {"a": 3}
 select json_insert('{"a": 3}', '$.a[last-1]', 4, '$.a[last-2]', '5');
 json_insert('{"a": 3}', '$.a[last-1]', 4, '$.a[last-2]', '5')
-{"a": ["5", 4, 3]}
+{"a": 3}
 select json_insert(cast('{"a": [1], "b": 2}' as json), '$.*[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('{"a": [1], "b": 2}' as json), '$.*[1]', 6)
+{"*": null, "a": [1], "b": 2}
 select json_insert(cast('{"a": 1, "b": 2}' as json), '$.*[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('{"a": 1, "b": 2}' as json), '$.*[1]', 6)
+{"*": null, "a": 1, "b": 2}
 select json_insert(cast('{"a": {"b": 3}}' as json),   '$.a.*[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('{"a": {"b": 3}}' as json),   '$.a.*[1]', 6)
+{"a": {"*": null, "b": 3}}
 select json_insert(cast('{"a": {"b": [3]}}' as json), '$.a.*[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('{"a": {"b": [3]}}' as json), '$.a.*[1]', 6)
+{"a": {"*": null, "b": [3]}}
 select json_insert(cast('{"a": {"b": 3}}' as json),   '$**[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('{"a": {"b": 3}}' as json),   '$**[1]', 6)
+{"a": {"b": 3}}
 select json_insert(cast('{"a": {"b": [3]}}' as json), '$**[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('{"a": {"b": [3]}}' as json), '$**[1]', 6)
+{"a": {"b": [3]}}
 select json_insert(cast('[1]' as json), '$[*][1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('[1]' as json), '$[*][1]', 6)
+[1]
 select json_insert(cast('[1]' as json), '$**[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('[1]' as json), '$**[1]', 6)
+[1]
 select json_insert(cast('[1, [2], 3]' as json), '$[*][1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('[1, [2], 3]' as json), '$[*][1]', 6)
+[1, [2], 3]
 select json_insert(cast('[1, [2], 3]' as json), '$**[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('[1, [2], 3]' as json), '$**[1]', 6)
+[1, [2], 3]
 select json_insert(cast('[[1]]' as json), '$[*][1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('[[1]]' as json), '$[*][1]', 6)
+[[1]]
 select json_insert(cast('[[1]]' as json), '$**[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('[[1]]' as json), '$**[1]', 6)
+[[1]]
 select json_insert(cast('[1, [2], 3]' as json), '$[1 to 2]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert(cast('[1, [2], 3]' as json), '$[1 to 2]', 6)
+[1, [2], 3]
 select json_insert(cast('{"a": 3}' as json), '$[1]', 6);
 json_insert(cast('{"a": 3}' as json), '$[1]', 6)
-[{"a": 3}, 6]
+{"a": 3}
 SELECT JSON_INSERT('{ "a" : "foo", "b" : [ 1, 2, 3 ] }', '$.a', true);
 JSON_INSERT('{ "a" : "foo", "b" : [ 1, 2, 3 ] }', '$.a', true)
 {"a": "foo", "b": [1, 2, 3]}
@@ -1741,10 +1759,10 @@ JSON_INSERT('{ "a" : "foo", "b" : [ 1, 2, 3 ] }', '$.c', 123)
 {"a": "foo", "b": [1, 2, 3], "c": 123}
 SELECT JSON_INSERT('{ "a" : "foo", "b" : [ 1, 2, 3 ] }', '$.c', '123');
 JSON_INSERT('{ "a" : "foo", "b" : [ 1, 2, 3 ] }', '$.c', '123')
-{"a": "foo", "b": [1, 2, 3], "c": "123"}
+{"a": "foo", "b": [1, 2, 3], "c": 123}
 SELECT JSON_INSERT('{ "a" : "foo", "b" : [ 1, 2, 3 ] }', '$.a[1]', true);
 JSON_INSERT('{ "a" : "foo", "b" : [ 1, 2, 3 ] }', '$.a[1]', true)
-{"a": ["foo", true], "b": [1, 2, 3]}
+{"a": "foo", "b": [1, 2, 3]}
 SELECT JSON_INSERT('{ "a" : "foo"}', '$.b', true, '$.b', false);
 JSON_INSERT('{ "a" : "foo"}', '$.b', true, '$.b', false)
 {"a": "foo", "b": true}
@@ -1786,7 +1804,7 @@ JSON_INSERT
 '$.c',
 '123'
 )
-{"a": "foo", "b": [1, 2, 3], "c": "123"}
+{"a": "foo", "b": [1, 2, 3], "c": 123}
 SELECT JSON_INSERT
 (
 '{ "a" : "foo", "b" : [ 1, 2, 3 ] }',
@@ -1799,7 +1817,7 @@ JSON_INSERT
 '$.a[1]',
 true
 )
-{"a": ["foo", true], "b": [1, 2, 3]}
+{"a": "foo", "b": [1, 2, 3]}
 SELECT JSON_INSERT
 (
 '{ "a" : "foo"}',
@@ -1821,22 +1839,25 @@ json_array_insert(NULL, '$.b[1]', 1)
 NULL
 select json_array_insert('[1,2,3]', NULL, 1);
 json_array_insert('[1,2,3]', NULL, 1)
-NULL
+[1, 2, 3]
 select json_array_insert('[1,2,3]', '$[3]', NULL);
 json_array_insert('[1,2,3]', '$[3]', NULL)
 [1, 2, 3, null]
 select json_array_insert(NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_array_insert'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_array_insert(NULL)' at line 1
 select json_array_insert(NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_array_insert'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_array_insert(NULL, NULL)' at line 1
 select json_array_insert(NULL, NULL, NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_array_insert'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_array_insert(NULL, NULL, NULL, NULL)' at line 1
 select json_array_insert('true', '$', 1);
-ERROR 42000: A path expression is not a path to a cell in an array.
+json_array_insert('true', '$', 1)
+true
 select json_array_insert('true', '$.a', 1);
-ERROR 42000: A path expression is not a path to a cell in an array.
+json_array_insert('true', '$.a', 1)
+true
 select json_array_insert('true', '$.a[1].b', 1);
-ERROR 42000: A path expression is not a path to a cell in an array.
+json_array_insert('true', '$.a[1].b', 1)
+true
 select json_array_insert( 'true', '$[0]', false );
 json_array_insert( 'true', '$[0]', false )
 true
@@ -1857,10 +1878,10 @@ json_array_insert( '[]', '$[1]', false )
 [false]
 select json_array_insert( '[]', '$[last]', false );
 json_array_insert( '[]', '$[last]', false )
-[false]
+[]
 select json_array_insert( '[]', '$[last-1]', false );
 json_array_insert( '[]', '$[last-1]', false )
-[false]
+[]
 select json_array_insert( '[true]', '$[0]', false );
 json_array_insert( '[true]', '$[0]', false )
 [false, true]
@@ -1887,10 +1908,10 @@ json_array_insert( '{ "a": [true] }', '$.a[2]', false )
 {"a": [true, false]}
 select json_array_insert( '{ "a": [true] }', '$.a[last]', false );
 json_array_insert( '{ "a": [true] }', '$.a[last]', false )
-{"a": [false, true]}
+{"a": [true]}
 select json_array_insert( '{ "a": [true] }', '$.a[last-1]', false );
 json_array_insert( '{ "a": [true] }', '$.a[last-1]', false )
-{"a": [false, true]}
+{"a": [true]}
 select json_array_insert( '[1, 2, 3, 4]', '$[0]', false );
 json_array_insert( '[1, 2, 3, 4]', '$[0]', false )
 [false, 1, 2, 3, 4]
@@ -1911,19 +1932,19 @@ json_array_insert( '[1, 2, 3, 4]', '$[5]', false )
 [1, 2, 3, 4, false]
 select json_array_insert( '[1, 2, 3, 4]', '$[last]', false );
 json_array_insert( '[1, 2, 3, 4]', '$[last]', false )
-[1, 2, 3, false, 4]
+[1, 2, 3, 4]
 select json_array_insert( '[1, 2, 3, 4]', '$[last-1]', false );
 json_array_insert( '[1, 2, 3, 4]', '$[last-1]', false )
-[1, 2, false, 3, 4]
+[1, 2, 3, 4]
 select json_array_insert( '[1, 2, 3, 4]', '$[last-2]', false );
 json_array_insert( '[1, 2, 3, 4]', '$[last-2]', false )
-[1, false, 2, 3, 4]
+[1, 2, 3, 4]
 select json_array_insert( '[1, 2, 3, 4]', '$[last-3]', false );
 json_array_insert( '[1, 2, 3, 4]', '$[last-3]', false )
-[false, 1, 2, 3, 4]
+[1, 2, 3, 4]
 select json_array_insert( '[1, 2, 3, 4]', '$[last-4]', false );
 json_array_insert( '[1, 2, 3, 4]', '$[last-4]', false )
-[false, 1, 2, 3, 4]
+[1, 2, 3, 4]
 select json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.a[0]', false );
 json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.a[0]', false )
 {"a": [false, 1, 2, 3, 4]}
@@ -1944,13 +1965,13 @@ json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.a[5]', false )
 {"a": [1, 2, 3, 4, false]}
 select json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.a[last]', false );
 json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.a[last]', false )
-{"a": [1, 2, 3, false, 4]}
+{"a": [1, 2, 3, 4]}
 select json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.a[last-1]', false );
 json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.a[last-1]', false )
-{"a": [1, 2, false, 3, 4]}
+{"a": [1, 2, 3, 4]}
 select json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.a[last-4]', false );
 json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.a[last-4]', false )
-{"a": [false, 1, 2, 3, 4]}
+{"a": [1, 2, 3, 4]}
 select json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.b[0]', false );
 json_array_insert( '{ "a": [1, 2, 3, 4] }', '$.b[0]', false )
 {"a": [1, 2, 3, 4]}
@@ -1967,13 +1988,17 @@ select json_array_insert( '"a"', '$[1]', true );
 json_array_insert( '"a"', '$[1]', true )
 "a"
 select json_insert('[]', '$.a.*[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert('[]', '$.a.*[1]', 6)
+[]
 select json_insert('[]', '$**[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert('[]', '$**[1]', 6)
+[]
 select json_insert('[]', '$[*][1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert('[]', '$[*][1]', 6)
+[]
 select json_insert('[]', '$[1 to 2]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_insert('[]', '$[1 to 2]', 6)
+[]
 select json_array_insert( '[ 1, 2, 3 ]', '$[1]', true, '$[1]', false );
 json_array_insert( '[ 1, 2, 3 ]', '$[1]', true, '$[1]', false )
 [1, false, true, 2, 3]
@@ -1983,9 +2008,9 @@ json_array_insert( '[ 1, 2, 3 ]', '$[1]',
 cast( '[ "a", "b", "c", "d" ]' as json ), '$[1][2]', false )
 [1, ["a", "b", false, "c", "d"], 2, 3]
 SELECT JSON_ARRAY_INSERT(JSON_EXTRACT('[1', '$'), '$[0]', 1);
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Missing a comma or ']' after an array element." at position 2.
+ERROR 42000: invalid JSON value: [1
 select json_array_insert( '[ 1, 2, 3 ]', '$[1]', json_extract( '[', '$' ) );
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Invalid value." at position 1.
+ERROR 42000: invalid JSON value: [
 # ----------------------------------------------------------------------
 # Test of JSON_SET function.
 # ----------------------------------------------------------------------
@@ -1994,20 +2019,20 @@ json_set(NULL, '$.b', cast(1 as json))
 NULL
 select json_set('[1,2,3]', NULL, cast(1 as json));
 json_set('[1,2,3]', NULL, cast(1 as json))
-NULL
+[1, 2, 3]
 select json_set('[1,2,3]', '$[3]', NULL);
 json_set('[1,2,3]', '$[3]', NULL)
 [1, 2, 3, null]
 select json_set(NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_set'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_set(NULL)' at line 1
 select json_set(NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_set'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_set(NULL, NULL)' at line 1
 select json_set(NULL, NULL, NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_set'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_set(NULL, NULL, NULL, NULL)' at line 1
 SELECT JSON_SET('[', '$[0]', 0);
-ERROR 22032: Invalid JSON text in argument 1 to function json_set: "Invalid value." at position 1.
+ERROR 42000: invalid JSON value: [
 SELECT JSON_SET('{}', '$.name', JSON_EXTRACT('', '$'));
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "The document is empty." at position 0.
+ERROR 42000: invalid JSON value: 
 select json_set('[1,2,3]', '$[2]', 4);
 json_set('[1,2,3]', '$[2]', 4)
 [1, 2, 4]
@@ -2025,10 +2050,10 @@ json_set('[]', '$[1]', 1)
 [1]
 select json_set('[]', '$[last]', 1);
 json_set('[]', '$[last]', 1)
-[1]
+[]
 select json_set('[]', '$[last-1]', 1);
 json_set('[]', '$[last-1]', 1)
-[1]
+[]
 select json_set('{"c":4}', '$.c', 5);
 json_set('{"c":4}', '$.c', 5)
 {"c": 5}
@@ -2040,52 +2065,55 @@ json_set('1', '$', 4)
 4
 select json_set('1', '$[0]', 4);
 json_set('1', '$[0]', 4)
-4
+1
 select json_set('1', '$[1]', 4);
 json_set('1', '$[1]', 4)
-[1, 4]
+1
 select json_set('1', '$[10]', '4', '$[11]', 5);
 json_set('1', '$[10]', '4', '$[11]', 5)
-[1, "4", 5]
+1
 select json_set('1', '$[last]', 4);
 json_set('1', '$[last]', 4)
-4
+1
 select json_set('1', '$[last-1]', 4);
 json_set('1', '$[last-1]', 4)
-[4, 1]
+1
 select json_set('1', '$[last-10]', '4', '$[last-11]', 5);
 json_set('1', '$[last-10]', '4', '$[last-11]', 5)
-[5, "4", 1]
+1
 select json_set('[1,2,3]', '$[2][0]', 4);
 json_set('[1,2,3]', '$[2][0]', 4)
-[1, 2, 4]
+[1, 2, 3]
 select json_set('[1,2,3]', '$[2][2]', 4);
 json_set('[1,2,3]', '$[2][2]', 4)
-[1, 2, [3, 4]]
+[1, 2, 3]
 select json_set('[1,2,3]', '$[2][last]', 4);
 json_set('[1,2,3]', '$[2][last]', 4)
-[1, 2, 4]
+[1, 2, 3]
 select json_set('[1,2,3]', '$[2][last-2]', 4);
 json_set('[1,2,3]', '$[2][last-2]', 4)
-[1, 2, [4, 3]]
+[1, 2, 3]
 select json_set('{"a": 3}', '$.a[0]', 4);
 json_set('{"a": 3}', '$.a[0]', 4)
-{"a": 4}
+{"a": 3}
 select json_set('{"a": 3}', '$.a[1]', 4, '$.a[2]', '5');
 json_set('{"a": 3}', '$.a[1]', 4, '$.a[2]', '5')
-{"a": [3, 4, "5"]}
+{"a": 3}
 select json_set('{"a": 3}', '$.a[last]', 4);
 json_set('{"a": 3}', '$.a[last]', 4)
-{"a": 4}
+{"a": 3}
 select json_set('{"a": 3}', '$.a[last-1]', 4, '$.a[last-2]', '5');
 json_set('{"a": 3}', '$.a[last-1]', 4, '$.a[last-2]', '5')
-{"a": ["5", 4, 3]}
+{"a": 3}
 select json_set(cast('{"a": {"b": [3]}}' as json), '$**[1]', 6);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+json_set(cast('{"a": {"b": [3]}}' as json), '$**[1]', 6)
+{"a": {"b": [3]}}
 SELECT JSON_SET('[1,2,3]', '$[*]', 4);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+JSON_SET('[1,2,3]', '$[*]', 4)
+[1, 2, 3]
 SELECT JSON_SET('[1,2,3]', '$[1 to 2]', 4);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+JSON_SET('[1,2,3]', '$[1 to 2]', 4)
+[1, 2, 3]
 SELECT JSON_SET('{ "a" : "foo", "b" : [ 1, 2, 3 ] }',
 '$.a',
 JSON_OBJECT());
@@ -2114,7 +2142,7 @@ cast('[true, false]' as json))
 {"a": "foo", "b": [1, 2, 3], "c": [true, false]}
 select json_set('1', '$[3]', 2);
 json_set('1', '$[3]', 2)
-[1, 2]
+1
 select json_set('{ "a" : "foo"}', '$.a',
 cast('{"b": false}' as json), '$.a.c', true);
 json_set('{ "a" : "foo"}', '$.a',
@@ -2171,7 +2199,7 @@ JSON_SET
 '$[3]',
 2
 )
-[1, 2]
+1
 SELECT JSON_SET
 (
 '{ "a" : "foo"}',
@@ -2193,16 +2221,16 @@ json_replace(NULL, '$.b', cast(1 as json))
 NULL
 select json_replace('[1,2,3]', NULL, cast(1 as json));
 json_replace('[1,2,3]', NULL, cast(1 as json))
-NULL
+[1, 2, 3]
 select json_replace('[1,2,3]', '$[2]', NULL);
 json_replace('[1,2,3]', '$[2]', NULL)
 [1, 2, null]
 select json_replace(NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_replace'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_replace(NULL)' at line 1
 select json_replace(NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_replace'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_replace(NULL, NULL)' at line 1
 select json_replace(NULL, NULL, NULL, NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_replace'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_replace(NULL, NULL, NULL, NULL)' at line 1
 select json_replace('[1,2,3]', '$[2]', 4);
 json_replace('[1,2,3]', '$[2]', 4)
 [1, 2, 4]
@@ -2214,10 +2242,10 @@ json_replace('[1,2,3]', '$[10]', 4)
 [1, 2, 3]
 select json_replace('[1,2,3]', '$[last]', 4);
 json_replace('[1,2,3]', '$[last]', 4)
-[1, 2, 4]
+[1, 2, 3]
 select json_replace('[1,2,3]', '$[last-1]', 4);
 json_replace('[1,2,3]', '$[last-1]', 4)
-[1, 4, 3]
+[1, 2, 3]
 select json_replace('[1,2,3]', '$[last-10]', 4);
 json_replace('[1,2,3]', '$[last-10]', 4)
 [1, 2, 3]
@@ -2232,7 +2260,7 @@ json_replace('1', '$', 4)
 4
 select json_replace('1', '$[0]', 4);
 json_replace('1', '$[0]', 4)
-4
+1
 select json_replace('1', '$[1]', 4);
 json_replace('1', '$[1]', 4)
 1
@@ -2241,22 +2269,25 @@ json_replace('1', '$[10]', '4', '$[11]', 5)
 1
 select json_replace('[1,2,3]', '$[2][0]', 4);
 json_replace('[1,2,3]', '$[2][0]', 4)
-[1, 2, 4]
+[1, 2, 3]
 select json_replace('[1,2,3]', '$[2][2]', 4);
 json_replace('[1,2,3]', '$[2][2]', 4)
 [1, 2, 3]
 select json_replace('{"a": 3}', '$.a[0]', 4);
 json_replace('{"a": 3}', '$.a[0]', 4)
-{"a": 4}
+{"a": 3}
 select json_replace('{"a": 3}', '$.a[1]', 4, '$.a[2]', '5');
 json_replace('{"a": 3}', '$.a[1]', 4, '$.a[2]', '5')
 {"a": 3}
 SELECT JSON_REPLACE('[1,2,3]', '$**.a', 4);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+JSON_REPLACE('[1,2,3]', '$**.a', 4)
+[1, 2, 3]
 SELECT JSON_REPLACE('[1,2,3]', '$[*]', 4);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+JSON_REPLACE('[1,2,3]', '$[*]', 4)
+[1, 2, 3]
 SELECT JSON_REPLACE('[1,2,3]', '$[1 to 2]', 4);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+JSON_REPLACE('[1,2,3]', '$[1 to 2]', 4)
+[1, 2, 3]
 SELECT JSON_REPLACE('{ "a" : "foo", "b" : [ 1, 2, 3 ] }',
 '$.c',
 true);
@@ -2270,7 +2301,7 @@ true);
 JSON_REPLACE('{ "a" : "foo", "b" : [ 1, 2, 3 ] }',
 '$.a[0]',
 true)
-{"a": true, "b": [1, 2, 3]}
+{"a": "foo", "b": [1, 2, 3]}
 SELECT JSON_REPLACE('{ "a" : "foo", "b" : [ 1, 2, 3 ] }',
 '$.b[5]',
 true);
@@ -2286,10 +2317,10 @@ json_array(NULL, '$.b', cast(1 as json))
 [null, "$.b", 1]
 select json_array('[1,2,3]', NULL, cast(1 as json));
 json_array('[1,2,3]', NULL, cast(1 as json))
-["[1,2,3]", null, 1]
+[[1, 2, 3], null, 1]
 select json_array('[1,2,3]', '$[3]', NULL);
 json_array('[1,2,3]', '$[3]', NULL)
-["[1,2,3]", "$[3]", null]
+[[1, 2, 3], "$[3]", null]
 select json_array();
 json_array()
 []
@@ -2298,7 +2329,7 @@ json_array(3.14)
 [3.14]
 select json_array('[1,2,3]');
 json_array('[1,2,3]')
-["[1,2,3]"]
+[[1, 2, 3]]
 select json_array(cast('[1,2,3]' as json));
 json_array(cast('[1,2,3]' as json))
 [[1, 2, 3]]
@@ -2307,7 +2338,7 @@ json_array(1,2,3)
 [1, 2, 3]
 select json_array(b'0', b'1', b'10');
 json_array(b'0', b'1', b'10')
-["base64:type15:AA==", "base64:type15:AQ==", "base64:type15:Ag=="]
+[0, 1, 2]
 SELECT JSON_ARRAY();
 JSON_ARRAY()
 []
@@ -2315,9 +2346,9 @@ JSON_ARRAY()
 # Test of JSON_OBJECT function.
 # ----------------------------------------------------------------------
 select json_object( 'a' );
-ERROR 42000: Incorrect parameter count in the call to native function 'json_object'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_object( 'a' )' at line 1
 select json_object( 'a', 1, 'b' );
-ERROR 42000: Incorrect parameter count in the call to native function 'json_object'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_object( 'a', 1, 'b' )' at line 1
 select json_object( null, 1 );
 ERROR 22032: JSON documents may not contain NULL member names.
 select json_object();
@@ -2366,35 +2397,40 @@ JSON_OBJECT()
 # Test of JSON_SEARCH function.
 # ----------------------------------------------------------------------
 select json_search();
-ERROR 42000: Incorrect parameter count in the call to native function 'json_search'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_search()' at line 1
 select json_search( '{ "a": true }' );
-ERROR 42000: Incorrect parameter count in the call to native function 'json_search'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_search( '{ "a": true }' )' at line 1
 select json_search( '{ "a": true }', 'one' );
-ERROR 42000: Incorrect parameter count in the call to native function 'json_search'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_search( '{ "a": true }', 'one' )' at line 1
 select json_search( null, 'one', 'foo' );
 json_search( null, 'one', 'foo' )
 NULL
 select json_search( '{ "a": "foo" }', null, 'foo' );
 json_search( '{ "a": "foo" }', null, 'foo' )
-NULL
+["$.a"]
 select json_search( '{ "a": "foo" }', 'one', 'foo', null, null );
 json_search( '{ "a": "foo" }', 'one', 'foo', null, null )
-NULL
+"$.a"
 select json_search( '{ "a": "foo" }', 'one', 'foo', null, '$.a', null );
 json_search( '{ "a": "foo" }', 'one', 'foo', null, '$.a', null )
-NULL
+"$.a"
 select json_search( '{ "a": "foo" }', 'twof', 'foo' );
-ERROR 42000: The oneOrAll argument to json_search may take these values: 'one' or 'all'.
+json_search( '{ "a": "foo" }', 'twof', 'foo' )
+["$.a"]
 select json_search( '{ "a": "foo" }', 'two', 'foo' );
-ERROR 42000: The oneOrAll argument to json_search may take these values: 'one' or 'all'.
+json_search( '{ "a": "foo" }', 'two', 'foo' )
+["$.a"]
 select json_search( '{ "a": "foo" }', 'one', 'foo', 'ab' );
-ERROR HY000: Incorrect arguments to ESCAPE
+json_search( '{ "a": "foo" }', 'one', 'foo', 'ab' )
+"$.a"
 select json_search( '{ "a": "foo" }', 'one', 'foo', null, '$a' );
-ERROR 42000: Invalid JSON path expression. The error is around character position 1.
+json_search( '{ "a": "foo" }', 'one', 'foo', null, '$a' )
+NULL
 select json_search( '{ "a": "foo" }', 'all', 'foo', null, '$.a', '$b' );
-ERROR 42000: Invalid JSON path expression. The error is around character position 1.
+json_search( '{ "a": "foo" }', 'all', 'foo', null, '$.a', '$b' )
+NULL
 select json_search(a, b, c);
-ERROR 42S22: Unknown column 'a' in 'field list'
+ERROR 42000: invalid JSON value: a
 select json_search( '{ "a": "foobar" }', 'one', 'foo%' );
 json_search( '{ "a": "foobar" }', 'one', 'foo%' )
 "$.a"
@@ -2406,25 +2442,25 @@ json_search( '{ "a": "foobar", "b": "focus", "c": [ "arm", "foot", "shoulder" ] 
 ["$.a", "$.c[1]"]
 select json_search( '{ "a": "foobar", "b": "focus", "c": [ "arm", "foot", "shoulder" ] }', 'all', 'f__us' );
 json_search( '{ "a": "foobar", "b": "focus", "c": [ "arm", "foot", "shoulder" ] }', 'all', 'f__us' )
-"$.b"
+["$.b"]
 select json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'all', 'foo%', null, '$.a' );
 json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'all', 'foo%', null, '$.a' )
-["$.a[0]", "$.a[2]"]
+NULL
 select json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'all', 'foo%', null, '$.a', '$.b' );
 json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'all', 'foo%', null, '$.a', '$.b' )
-["$.a[0]", "$.a[2]", "$.b"]
+NULL
 select json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'one', 'foo%', null, '$.a', '$.b' );
 json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'one', 'foo%', null, '$.a', '$.b' )
-"$.a[0]"
+NULL
 select json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'ALL', 'foo%', null, '$.a' );
 json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'ALL', 'foo%', null, '$.a' )
-["$.a[0]", "$.a[2]"]
+NULL
 select json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'aLl', 'foo%', null, '$.a', '$.b' );
 json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'aLl', 'foo%', null, '$.a', '$.b' )
-["$.a[0]", "$.a[2]", "$.b"]
+NULL
 select json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'ONE', 'foo%', null, '$.a', '$.b' );
 json_search( '{ "a": [ "foolish", "folly", "foolhardy"  ], "b" : "fool" }', 'ONE', 'foo%', null, '$.a', '$.b' )
-"$.a[0]"
+NULL
 select json_search
 (
 '[ { "a": { "b": { "c": "fool" } } }, { "b": { "c": "shoulder" } }, { "c": { "c": "food"} } ]',
@@ -2441,7 +2477,7 @@ json_search
 null,
 '$**.c'
 )
-["$[0].a.b.c", "$[2].c.c"]
+NULL
 select json_search
 (
 '[ { "a": { "b": { "c": "showtime" } } }, { "b": { "c": "shoulder" } }, { "c": { "c": "shoe"} } ]',
@@ -2458,7 +2494,7 @@ json_search
 null,
 '$**.c'
 )
-["$[0].a.b.c", "$[1].b.c", "$[2].c.c"]
+NULL
 select json_search
 (
 '[ { "a": { "b": { "c": "showtime" } } }, { "b": { "c": "shoulder" } }, { "c": { "c": "shoe"} } ]',
@@ -2475,7 +2511,7 @@ json_search
 null,
 '$**.c'
 )
-["$[0].a.b.c", "$[2].c.c"]
+NULL
 select json_search
 (
 '[ { "a": { "b": { "c": "showtime" } } }, { "b": { "c": "shoulder" } }, { "c": { "c": "shoe"} } ]',
@@ -2492,7 +2528,7 @@ json_search
 null,
 '$[*].c'
 )
-"$[2].c.c"
+NULL
 select json_search
 (
 '[ { "a": { "b": { "c": "showtime" } } }, [ { "b": { "c": "shout" } }, { "c": { "c": "shoe"} } ] ]',
@@ -2509,49 +2545,49 @@ json_search
 null,
 '$[1]**.c'
 )
-["$[1][0].b.c", "$[1][1].c.c"]
+NULL
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo%bar' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo%bar' )
 ["$[0]", "$[1]"]
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo\%bar' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo\%bar' )
-"$[1]"
+["$[1]"]
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|' )
-"$[1]"
+["$[1]"]
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[0]' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[0]' )
 NULL
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[0]', '$[1]' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[0]', '$[1]' )
-"$[1]"
+NULL
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[0]', '$[1]', '$[2]' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[0]', '$[1]', '$[2]' )
-"$[1]"
+NULL
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo\%bar', null );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo\%bar', null )
-"$[1]"
+["$[1]"]
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo\%bar', null, '$[0]' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo\%bar', null, '$[0]' )
 NULL
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo\%bar', null, '$[1]' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo\%bar', null, '$[1]' )
-"$[1]"
+NULL
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[0]' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[0]' )
 NULL
 select json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[1]' );
 json_search( '[ "footbar", "foo%bar" ]', 'all', 'foo|%bar', '|', '$[1]' )
-"$[1]"
+NULL
 select json_search( '[ "abc", "ABC" ]', 'all', 'aBc' );
 json_search( '[ "abc", "ABC" ]', 'all', 'aBc' )
-NULL
+["$[0]", "$[1]"]
 select json_search( '[ "abc", "ABC" ]', 'all', 'abc' );
 json_search( '[ "abc", "ABC" ]', 'all', 'abc' )
-"$[0]"
+["$[0]", "$[1]"]
 select json_search( '[ "abc", "ABC" ]', 'all', 'ABC' );
 json_search( '[ "abc", "ABC" ]', 'all', 'ABC' )
-"$[1]"
+["$[0]", "$[1]"]
 select json_search( '[ 10, "10", 1.0, "1.0" ]', 'all', '1%' );
 json_search( '[ 10, "10", 1.0, "1.0" ]', 'all', '1%' )
 ["$[1]", "$[3]"]
@@ -2584,7 +2620,7 @@ JSON_SEARCH
 null,
 '$.b'
 )
-"$.b[2]"
+NULL
 SELECT JSON_SEARCH
 (
 '{ "a" : "123", "b" : { "key" : "123" } }',
@@ -2650,7 +2686,7 @@ JSON_SEARCH
 '{ "onepotato": "foot", "one potato": "food" , "one \\"potato": "fool" }',
 'all',
 'food'
-  )
+)
 );
 JSON_UNQUOTE
 (
@@ -2659,9 +2695,9 @@ JSON_SEARCH
 '{ "onepotato": "foot", "one potato": "food" , "one \\"potato": "fool" }',
 'all',
 'food'
-  )
 )
-$."one potato"
+)
+["$.one potato"]
 select json_type(case (null is null) when 1 then
 cast('null' as json) else
 cast('[1,2,3]' as json) end);
@@ -2699,27 +2735,27 @@ cast(json_extract(cast(concat('[', cast('["A",2]' as json), ']') as json),
 # Test of aggregate function MAX, MIN.
 # ----------------------------------------------------------------------
 select max(cast('[1,2,3]' as json));
-max(cast('[1,2,3]' as json))
+MAX(CAST('[1,2,3]' AS json))
 [1, 2, 3]
 # ----------------------------------------------------------------------
 # Test of JSON_QUOTE, JSON_UNQUOTE
 # ----------------------------------------------------------------------
 select json_quote();
-ERROR 42000: Incorrect parameter count in the call to native function 'json_quote'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_quote()' at line 1
 select json_quote('abc', 'def');
-ERROR 42000: Incorrect parameter count in the call to native function 'json_quote'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_quote('abc', 'def')' at line 1
 select json_quote(NULL, 'def');
-ERROR 42000: Incorrect parameter count in the call to native function 'json_quote'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_quote(NULL, 'def')' at line 1
 select json_quote('abc', NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_quote'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_quote('abc', NULL)' at line 1
 select json_unquote();
-ERROR 42000: Incorrect parameter count in the call to native function 'json_unquote'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_unquote()' at line 1
 select json_unquote('"abc"', '"def"');
-ERROR 42000: Incorrect parameter count in the call to native function 'json_unquote'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_unquote('"abc"', '"def"')' at line 1
 select json_unquote(NULL, 'def');
-ERROR 42000: Incorrect parameter count in the call to native function 'json_unquote'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_unquote(NULL, 'def')' at line 1
 select json_unquote('"abc"', NULL);
-ERROR 42000: Incorrect parameter count in the call to native function 'json_unquote'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'select json_unquote('"abc"', NULL)' at line 1
 select json_quote(NULL);
 json_quote(NULL)
 NULL
@@ -2738,8 +2774,6 @@ json_quote(convert('abc' using latin1))
 select json_quote(convert('abc' using utf8));
 json_quote(convert('abc' using utf8))
 "abc"
-Warnings:
-Warning	3719	'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous.
 select json_quote(convert('abc' using utf8mb4));
 json_quote(convert('abc' using utf8mb4))
 "abc"
@@ -2758,8 +2792,6 @@ abc
 select json_unquote(convert('"abc"' using utf8));
 json_unquote(convert('"abc"' using utf8))
 abc
-Warnings:
-Warning	3719	'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous.
 select json_unquote(convert('"abc"' using utf8mb4));
 json_unquote(convert('"abc"' using utf8mb4))
 abc
@@ -2770,9 +2802,11 @@ select json_unquote('"');
 json_unquote('"')
 "
 select json_quote(123);
-ERROR HY000: Incorrect type for argument 1 in function json_quote.
+json_quote(123)
+"123"
 select json_unquote(123);
-ERROR HY000: Incorrect type for argument 1 in function json_unquote.
+json_unquote(123)
+123
 select json_unquote('""');
 json_unquote('""')
 
@@ -2805,45 +2839,39 @@ json_unquote(cast('["a", "b", "c"]' as json))
 ["a", "b", "c"]
 select charset(json_unquote('"abc"'));
 charset(json_unquote('"abc"'))
-utf8mb4
+utf8
 select json_quote(convert(X'e68891' using utf8));
 json_quote(convert(X'e68891' using utf8))
-"我"
-Warnings:
-Warning	3719	'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous.
+"e68891"
 select json_quote(convert(X'e68891' using utf8mb4));
 json_quote(convert(X'e68891' using utf8mb4))
-"我"
+"e68891"
 select cast(json_quote(convert(X'e68891' using utf8)) as json);
 cast(json_quote(convert(X'e68891' using utf8)) as json)
-"我"
-Warnings:
-Warning	3719	'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous.
+"e68891"
 select json_unquote(convert(X'e68891' using utf8));
 json_unquote(convert(X'e68891' using utf8))
-我
-Warnings:
-Warning	3719	'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous.
+e68891
 select  json_quote(json_quote(json_quote('abc')));
 json_quote(json_quote(json_quote('abc')))
 "\"\\\"abc\\\"\""
-select  json_unquote(json_unquote(json_unquote(        # long round trip of it
+select  json_unquote(json_unquote(json_unquote(
 json_quote(json_quote(json_quote('abc'))))));
-json_unquote(json_unquote(json_unquote(        # long round trip of it
+json_unquote(json_unquote(json_unquote(
 json_quote(json_quote(json_quote('abc'))))))
 abc
 select cast(cast('2015-01-15 23:24:25' as datetime) as json);
 cast(cast('2015-01-15 23:24:25' as datetime) as json)
-"2015-01-15 23:24:25.000000"
+"2015-01-15 23:24:25"
 select json_unquote(cast(cast('2015-01-15 23:24:25' as datetime) as json));
 json_unquote(cast(cast('2015-01-15 23:24:25' as datetime) as json))
-2015-01-15 23:24:25.000000
+2015-01-15 23:24:25
 select cast(st_geomfromtext('point(1 1)') as json);
 cast(st_geomfromtext('point(1 1)') as json)
-{"type": "Point", "coordinates": [1.0, 1.0]}
+"point(1 1)"
 select json_unquote(cast(st_geomfromtext('point(1 1)') as json));
 json_unquote(cast(st_geomfromtext('point(1 1)') as json))
-{"type": "Point", "coordinates": [1.0, 1.0]}
+point(1 1)
 SELECT JSON_UNQUOTE( '"abc"' );
 JSON_UNQUOTE( '"abc"' )
 abc
@@ -2851,7 +2879,8 @@ SELECT JSON_UNQUOTE( '"abc' );
 JSON_UNQUOTE( '"abc' )
 "abc
 SELECT JSON_UNQUOTE( 123 );
-ERROR HY000: Incorrect type for argument 1 in function json_unquote.
+JSON_UNQUOTE( 123 )
+123
 SELECT JSON_UNQUOTE
 ( CAST( CAST( '"abc"' AS JSON ) AS CHAR ) );
 JSON_UNQUOTE
@@ -2877,16 +2906,14 @@ CAST(
 JSON_EXTRACT( '{ "userName" : "fred" }', '$.userName' )
 AS CHAR
 ) = 'fred';
-CAST(
-JSON_EXTRACT( '{ "userName" : "fred" }', '$.userName' )
-AS CHAR
-) = 'fred'
+CAST(JSON_EXTRACT('{ "userName" : "fred" }','$.userName') AS CHAR) = 'fred'
 0
 SELECT JSON_QUOTE( 'abc' );
 JSON_QUOTE( 'abc' )
 "abc"
 SELECT JSON_QUOTE( 123 );
-ERROR HY000: Incorrect type for argument 1 in function json_quote.
+JSON_QUOTE( 123 )
+"123"
 SELECT CAST( JSON_QUOTE( '123' ) AS JSON );
 CAST( JSON_QUOTE( '123' ) AS JSON )
 "123"
@@ -3053,11 +3080,12 @@ CAST(3 AS JSON)
 )
 1
 SELECT JSON_CONTAINS();
-ERROR 42000: Incorrect parameter count in the call to native function 'JSON_CONTAINS'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SELECT JSON_CONTAINS()' at line 1
 SELECT JSON_CONTAINS('[1]');
-ERROR 42000: Incorrect parameter count in the call to native function 'JSON_CONTAINS'
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SELECT JSON_CONTAINS('[1]')' at line 1
 SELECT JSON_CONTAINS('[1]', '[1]', '$', '$[0]');
-ERROR 42000: Incorrect parameter count in the call to native function 'JSON_CONTAINS'
+JSON_CONTAINS('[1]', '[1]', '$', '$[0]')
+1
 # ----------------------------------------------------------------------
 # Wrong collation from JSON_QUOTE caused problems: Set it in
 # Item_func_json_quote::fix_length_and_dec.   Bug found by Knut.
@@ -3065,7 +3093,7 @@ ERROR 42000: Incorrect parameter count in the call to native function 'JSON_CONT
 # ----------------------------------------------------------------------
 select json_object("a", ifnull(json_quote('test'), cast('null' as json)));
 json_object("a", ifnull(json_quote('test'), cast('null' as json)))
-{"a": "\"test\""}
+{"a": "test"}
 select cast(concat('[', json_quote('ab'), ']') as json);
 cast(concat('[', json_quote('ab'), ']') as json)
 ["ab"]
@@ -3083,23 +3111,21 @@ cast(concat('["', json_type(cast(1 as json)), '"]') as json)
 JSON_KEYS('{ "key80": "2015-04-20 11:53:55"}')
 ["key80"]
 SELECT CAST(1 AS JSON) UNION ALL SELECT CAST(1 AS JSON);
-CAST(1 AS JSON)
+CAST(1 AS JSON) UNION ALL SELECT CAST(1 AS JSON)
 1
 1
 SELECT COUNT(*), CAST(NULL AS JSON);
 COUNT(*)	CAST(NULL AS JSON)
 1	NULL
 SELECT COUNT(*), JSON_EXTRACT('not valid json!', '$');
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Invalid value." at position 1.
+ERROR 42000: invalid JSON value: not valid json!
 # ----------------------------------------------------------------------
 # Bug  report from John E.
 # Crash in Item_copy_json::~Item_copy_json
 # ----------------------------------------------------------------------
 EXPLAIN SELECT COUNT(*), JSON_KEYS('{}');
 id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
-1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	No tables used
-Warnings:
-Note	1003	/* select#1 */ select count(0) AS `COUNT(*)`,json_keys('{}') AS `JSON_KEYS('{}')`
+1	SIMPLE	dual	NULL	ALL	NULL	NULL	NULL	NULL	1	100.00	NULL
 select json_search( '{ "a": "foo" }', 'one', 'foo', 'a' );
 json_search( '{ "a": "foo" }', 'one', 'foo', 'a' )
 "$.a"
@@ -3108,9 +3134,10 @@ json_search( '{ "a": "foo" }', 'one', 'foo', null )
 "$.a"
 select json_search( '{ "a": "foo" }', 'one', 'foo', convert(x'f8' using latin1) );
 json_search( '{ "a": "foo" }', 'one', 'foo', convert(x'f8' using latin1) )
-"$.a"
+NULL
 select json_search( '{ "a": "foo" }', 'one', 'foo', 'ab' );
-ERROR HY000: Incorrect arguments to ESCAPE
+json_search( '{ "a": "foo" }', 'one', 'foo', 'ab' )
+"$.a"
 # ----------------------------------------------------------------------
 # Wrong results when Json_path_cache primed is accessed
 # during the prepare-phase.
@@ -3123,9 +3150,9 @@ execute stmt1;
 json_remove( '[ 1, { "a": true, "b": false, "c": null }, 5 ]', null ) is null
 1
 select json_remove( '[ 1, { "a": true, "b": false, "c": null }, 5 ]', '$.' ) is null;
-ERROR 42000: Invalid JSON path expression. The error is around character position 2.
+json_remove( '[ 1, { "a": true, "b": false, "c": null }, 5 ]', '$.' ) is null
+0
 prepare stmt1 from 'select json_remove( ''[ 1, { "a": true, "b": false, "c": null }, 5 ]'', ''$.'' ) is null';
-ERROR 42000: Invalid JSON path expression. The error is around character position 2.
 # ----------------------------------------------------------------------
 # Bug#20987329 VALUE OF PREPARED STATEMENT PLACEHOLDER FOR PARAMETER
 #              IN JSON_EXTRACT IS STICKY
@@ -3206,11 +3233,11 @@ prepare json_stmt9 FROM 'select json_search( ''{ "keyA": [ "foot" ], "keyB": [ "
 set @mypath = '$.keyA';
 execute json_stmt9 USING @mypath;
 json_search( '{ "keyA": [ "foot" ], "keyB": [ "food" ] }', 'all', 'foo%', null, ? )
-"$.keyA[0]"
+NULL
 set @mypath = '$.keyB';
 execute json_stmt9 USING @mypath;
 json_search( '{ "keyA": [ "foot" ], "keyB": [ "food" ] }', 'all', 'foo%', null, ? )
-"$.keyB[0]"
+NULL
 prepare json_stmt10 FROM 'select json_remove( ''{ "keyA": [ "foot" ], "keyB": [ "food" ] }'', ? )';
 set @mypath = '$.keyA';
 execute json_stmt10 USING @mypath;
@@ -3256,24 +3283,23 @@ JSON_TYPE(JSON_OBJECT())
 OBJECT
 CREATE VIEW v1 AS SELECT JSON_TYPE(JSON_OBJECT());
 SELECT * FROM v1;
-JSON_TYPE(JSON_OBJECT())
+json_type(json_object())
 OBJECT
 SELECT JSON_TYPE(CAST(CAST('2015-05-25 11:23:55' AS DATETIME) AS JSON));
 JSON_TYPE(CAST(CAST('2015-05-25 11:23:55' AS DATETIME) AS JSON))
-DATETIME
+STRING
 CREATE VIEW v2 AS SELECT JSON_TYPE(CAST(CAST('2015-05-25 11:23:55' AS
 DATETIME) AS JSON));
 SELECT * FROM v2;
-JSON_TYPE(CAST(CAST('2015-05-25 11:23:55' AS
-DATETIME) AS JSON))
-DATETIME
+json_type(cast(cast('2015-05-25 11:23:55' as DATETIME) as JSON))
+STRING
 drop view v1;
 drop view v2;
 #
 # Bug#21198333 SIG 6 IN ITEM_CACHE_JSON::CACHE_VALUE AT SQL/ITEM.CC:9470
 #
 SELECT MIN(JSON_EXTRACT('not json', '$'));
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Invalid value." at position 1.
+ERROR 42000: invalid JSON value: not json
 #
 # Bug#21200657 DATA FROM DERIVED TABLE BASED
 # ON JSN_QUOTE()/JSN_UNQUOTE() CALL IS TRUNCATED
@@ -3305,11 +3331,11 @@ JSON_ARRAY('key1', false, 'key2', true)
 ["key1", false, "key2", true]
 CREATE VIEW v1 AS SELECT JSON_OBJECT('key1', false, 'key2', true);
 SELECT * FROM v1;
-JSON_OBJECT('key1', false, 'key2', true)
+json_object('key1', false, 'key2', true)
 {"key1": false, "key2": true}
 CREATE VIEW v2 AS SELECT JSON_ARRAY('key1', false, 'key2', true);
 SELECT * FROM v2;
-JSON_ARRAY('key1', false, 'key2', true)
+json_array('key1', false, 'key2', true)
 ["key1", false, "key2", true]
 drop view v1;
 drop view v2;
@@ -3335,13 +3361,17 @@ JSON_CONTAINS('[]', '[]')
 # Bug#21377136 STACK OVERFLOW IN RAPIDJSON::GENERICREADER
 #
 SELECT JSON_VALID(REPEAT('[', 100000));
-ERROR 22032: The JSON document exceeds the maximum depth.
+JSON_VALID(REPEAT('[', 100000))
+0
 SELECT JSON_VALID(REPEAT('{"a":', 100000));
-ERROR 22032: The JSON document exceeds the maximum depth.
+JSON_VALID(REPEAT('{"a":', 100000))
+0
 SELECT JSON_VALID(REPEAT('{"a":[', 100000));
-ERROR 22032: The JSON document exceeds the maximum depth.
+JSON_VALID(REPEAT('{"a":[', 100000))
+0
 SELECT JSON_VALID(REPEAT('[{"a":', 100000));
-ERROR 22032: The JSON document exceeds the maximum depth.
+JSON_VALID(REPEAT('[{"a":', 100000))
+0
 #
 # Bug#21381806 JSON: ASSERTION FAILED: ARG->NULL_VALUE
 #
@@ -3360,35 +3390,35 @@ JSON_ARRAY(CASE WHEN 1 THEN NULL ELSE NULL END)
 #
 SELECT JSON_EXTRACT('-1E-36181012216111515851075235238', '$');
 JSON_EXTRACT('-1E-36181012216111515851075235238', '$')
--0.0
+0
 SELECT JSON_EXTRACT('1E-36181012216111515851075235238', '$');
 JSON_EXTRACT('1E-36181012216111515851075235238', '$')
-0.0
+0
 SELECT JSON_EXTRACT('1E-325', '$');
 JSON_EXTRACT('1E-325', '$')
-0.0
+0
 SELECT JSON_EXTRACT('1E-324', '$');
 JSON_EXTRACT('1E-324', '$')
-0.0
+0
 SELECT JSON_EXTRACT('1E-323', '$');
 JSON_EXTRACT('1E-323', '$')
-1e-323
+0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001
 SELECT JSON_EXTRACT('1E+308', '$');
 JSON_EXTRACT('1E+308', '$')
-1e308
+100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 SELECT JSON_EXTRACT('1E+309', '$');
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Number too big to be stored in double." at position 0.
+ERROR 42000: invalid JSON value: 1E+309
 SELECT JSON_EXTRACT('1E+36181012216111515851075235238', '$');
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Number too big to be stored in double." at position 0.
+ERROR 42000: invalid JSON value: 1E+36181012216111515851075235238
 SELECT JSON_EXTRACT('-1E+36181012216111515851075235238', '$');
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "Number too big to be stored in double." at position 0.
+ERROR 42000: invalid JSON value: -1E+36181012216111515851075235238
 #
 # Bug#21383284: ASSERTION IN SELECT_LEX::SETUP_CONDS
 #
 SELECT 1 FROM dual WHERE JSON_SEARCH('{}', 'one', 'foo', 'too-long-escape');
-ERROR HY000: Incorrect arguments to ESCAPE
+1
 SELECT 1 FROM dual WHERE JSON_SEARCH('{}', 'one', 'foo', JSON_EXTRACT('', '$'));
-ERROR 22032: Invalid JSON text in argument 1 to function json_extract: "The document is empty." at position 0.
+ERROR 42000: invalid JSON value: 
 #
 # Bug#21442624 INCORRECT RESULT FROM JSON_SET WITH AUTO-WRAPPING
 #
@@ -3397,13 +3427,13 @@ JSON_SET('1', '$', 100)
 100
 SELECT JSON_SET('1', '$[0]', 100);
 JSON_SET('1', '$[0]', 100)
-100
+1
 SELECT JSON_SET('1', '$[0][0]', 100);
 JSON_SET('1', '$[0][0]', 100)
-100
+1
 SELECT JSON_SET('1', '$[0][0][0]', 100);
 JSON_SET('1', '$[0][0][0]', 100)
-100
+1
 SELECT JSON_SET('[]', '$', 100);
 JSON_SET('[]', '$', 100)
 100
@@ -3424,10 +3454,10 @@ JSON_SET('[1]', '$[0]', 100)
 [100]
 SELECT JSON_SET('[1]', '$[0][0]', 100);
 JSON_SET('[1]', '$[0][0]', 100)
-[100]
+[1]
 SELECT JSON_SET('[1]', '$[0][0][0]', 100);
 JSON_SET('[1]', '$[0][0][0]', 100)
-[100]
+[1]
 SELECT JSON_SET('[[1]]', '$', 100);
 JSON_SET('[[1]]', '$', 100)
 100
@@ -3439,7 +3469,7 @@ JSON_SET('[[1]]', '$[0][0]', 100)
 [[100]]
 SELECT JSON_SET('[[1]]', '$[0][0][0]', 100);
 JSON_SET('[[1]]', '$[0][0][0]', 100)
-[[100]]
+[[1]]
 SELECT JSON_SET('[[[1]]]', '$', 100);
 JSON_SET('[[[1]]]', '$', 100)
 100
@@ -3457,13 +3487,13 @@ JSON_REPLACE('1', '$', 100)
 100
 SELECT JSON_REPLACE('1', '$[0]', 100);
 JSON_REPLACE('1', '$[0]', 100)
-100
+1
 SELECT JSON_REPLACE('1', '$[0][0]', 100);
 JSON_REPLACE('1', '$[0][0]', 100)
-100
+1
 SELECT JSON_REPLACE('1', '$[0][0][0]', 100);
 JSON_REPLACE('1', '$[0][0][0]', 100)
-100
+1
 SELECT JSON_REPLACE('[]', '$', 100);
 JSON_REPLACE('[]', '$', 100)
 100
@@ -3484,10 +3514,10 @@ JSON_REPLACE('[1]', '$[0]', 100)
 [100]
 SELECT JSON_REPLACE('[1]', '$[0][0]', 100);
 JSON_REPLACE('[1]', '$[0][0]', 100)
-[100]
+[1]
 SELECT JSON_REPLACE('[1]', '$[0][0][0]', 100);
 JSON_REPLACE('[1]', '$[0][0][0]', 100)
-[100]
+[1]
 SELECT JSON_REPLACE('[[1]]', '$', 100);
 JSON_REPLACE('[[1]]', '$', 100)
 100
@@ -3499,7 +3529,7 @@ JSON_REPLACE('[[1]]', '$[0][0]', 100)
 [[100]]
 SELECT JSON_REPLACE('[[1]]', '$[0][0][0]', 100);
 JSON_REPLACE('[[1]]', '$[0][0][0]', 100)
-[[100]]
+[[1]]
 SELECT JSON_REPLACE('[[[1]]]', '$', 100);
 JSON_REPLACE('[[[1]]]', '$', 100)
 100
@@ -3519,12 +3549,7 @@ SELECT JSON_ARRAY(LEAST(NULL, NULL), GREATEST(NULL, NULL), LEAST(j1, NULL),
 GREATEST(NULL, j2), LEAST(j1, j2), GREATEST(j1, j2)) AS j
 FROM (SELECT CAST('1' AS JSON) AS j1, CAST('2' AS JSON) AS j2) t;
 j
-[null, null, null, null, "1", "2"]
-Warnings:
-Warning	1235	This version of MySQL doesn't yet support 'comparison of JSON in the LEAST and GREATEST operators'
-Warning	1235	This version of MySQL doesn't yet support 'comparison of JSON in the LEAST and GREATEST operators'
-Warning	1235	This version of MySQL doesn't yet support 'comparison of JSON in the LEAST and GREATEST operators'
-Warning	1235	This version of MySQL doesn't yet support 'comparison of JSON in the LEAST and GREATEST operators'
+[null, null, null, null, 1, 2]
 #
 # Bug#22961128: WRONG RESULT WHEN MANIPULATING RESULT OF JSON_MERGE
 #
@@ -3551,7 +3576,7 @@ NULL
 # since a check for null return value was added.
 #
 DO BIT_COUNT(COMPRESS(1) << JSON_DEPTH(1));
-ERROR 22032: Invalid data type for JSON data in argument 1 to function json_depth; a JSON string or JSON type is required.
+ERROR 42000: unsupported statement type: *sqlparser.OtherAdmin
 #
 # Bug#25516881: JSON_UNQUOTE RETURNS WRONG RESULT WHEN INPUT IS UTF-16
 #
@@ -3559,7 +3584,8 @@ SELECT JSON_UNQUOTE(CAST('"abc"' AS CHAR CHARSET utf16));
 JSON_UNQUOTE(CAST('"abc"' AS CHAR CHARSET utf16))
 abc
 SELECT JSON_UNQUOTE(CAST('ABCD' AS BINARY));
-ERROR 22032: Cannot create a JSON value from a string with CHARACTER SET 'binary'.
+JSON_UNQUOTE(CAST('ABCD' AS BINARY))
+ABCD
 SELECT HEX(JSON_UNQUOTE(CAST('"abc"' AS CHAR CHARSET utf16))),
 HEX(JSON_UNQUOTE(CAST('abc' AS CHAR CHARSET utf16)));
 HEX(JSON_UNQUOTE(CAST('"abc"' AS CHAR CHARSET utf16)))	HEX(JSON_UNQUOTE(CAST('abc' AS CHAR CHARSET utf16)))
@@ -3586,13 +3612,13 @@ SUM(CAST('5.45' AS JSON))
 # Bug#25518504: SOME BIG NUMBERS IN JSON DOCUMENTS BECOME ZERO
 #
 SELECT CAST('2e308' AS JSON);
-ERROR 22032: Invalid JSON text in argument 1 to function cast_as_json: "Terminate parsing due to Handler error." at position 0.
+ERROR 22032: Invalid JSON text in argument 1 to function cast_as_json: "Invalid value." at position 0.
 SELECT CAST('-2e308' AS JSON);
-ERROR 22032: Invalid JSON text in argument 1 to function cast_as_json: "Terminate parsing due to Handler error." at position 0.
+ERROR 22032: Invalid JSON text in argument 1 to function cast_as_json: "Invalid value." at position 0.
 SELECT CAST('2e309' AS JSON);
-ERROR 22032: Invalid JSON text in argument 1 to function cast_as_json: "Number too big to be stored in double." at position 0.
+ERROR 22032: Invalid JSON text in argument 1 to function cast_as_json: "Invalid value." at position 0.
 SELECT CAST('-2e309' AS JSON);
-ERROR 22032: Invalid JSON text in argument 1 to function cast_as_json: "Number too big to be stored in double." at position 0.
+ERROR 22032: Invalid JSON text in argument 1 to function cast_as_json: "Invalid value." at position 0.
 #
 # Bug#25818544: Assert failure when using result from NULLIF as JSON
 #
@@ -3610,28 +3636,28 @@ JSON_EXTRACT(NULLIF('1', '2'), '$')
 #
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[0 to 0]');
 JSON_EXTRACT('[1,2,3,4]', '$[0 to 0]')
-[1]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[1 to 1]');
 JSON_EXTRACT('[1,2,3,4]', '$[1 to 1]')
-[2]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[1 to 2]');
 JSON_EXTRACT('[1,2,3,4]', '$[1 to 2]')
-[2, 3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[1 to 3]');
 JSON_EXTRACT('[1,2,3,4]', '$[1 to 3]')
-[2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[1 to 4]');
 JSON_EXTRACT('[1,2,3,4]', '$[1 to 4]')
-[2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[0 to 2]');
 JSON_EXTRACT('[1,2,3,4]', '$[0 to 2]')
-[1, 2, 3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[0 to 3]');
 JSON_EXTRACT('[1,2,3,4]', '$[0 to 3]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[0 to 4]');
 JSON_EXTRACT('[1,2,3,4]', '$[0 to 4]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[99 to 100]');
 JSON_EXTRACT('[1,2,3,4]', '$[99 to 100]')
 NULL
@@ -3640,31 +3666,31 @@ JSON_EXTRACT('[1,2,3,4]', '$[100 to 100]')
 NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last to last]');
 JSON_EXTRACT('[1,2,3,4]', '$[last to last]')
-[4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last-1 to last-1]');
 JSON_EXTRACT('[1,2,3,4]', '$[last-1 to last-1]')
-[3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last-1 to last]');
 JSON_EXTRACT('[1,2,3,4]', '$[last-1 to last]')
-[3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last-3 to last-1]');
 JSON_EXTRACT('[1,2,3,4]', '$[last-3 to last-1]')
-[1, 2, 3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last-4 to last]');
 JSON_EXTRACT('[1,2,3,4]', '$[last-4 to last]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last-4 to 5]');
 JSON_EXTRACT('[1,2,3,4]', '$[last-4 to 5]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last to 2]');
 JSON_EXTRACT('[1,2,3,4]', '$[last to 2]')
 NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last-1 to 2]');
 JSON_EXTRACT('[1,2,3,4]', '$[last-1 to 2]')
-[3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last-1 to 3]');
 JSON_EXTRACT('[1,2,3,4]', '$[last-1 to 3]')
-[3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[last-100 to last-99]');
 JSON_EXTRACT('[1,2,3,4]', '$[last-100 to last-99]')
 NULL
@@ -3673,58 +3699,58 @@ JSON_EXTRACT('[1,2,3,4]', '$[last-100 to last-100]')
 NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[1 to last-1]');
 JSON_EXTRACT('[1,2,3,4]', '$[1 to last-1]')
-[2, 3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[2 to last-2]');
 JSON_EXTRACT('[1,2,3,4]', '$[2 to last-2]')
 NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[1 to 2]');
 JSON_EXTRACT('[1,2,3,4]', '$**[1 to 2]')
-[2, 3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[1 to 3]');
 JSON_EXTRACT('[1,2,3,4]', '$**[1 to 3]')
-[2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[1 to 4]');
 JSON_EXTRACT('[1,2,3,4]', '$**[1 to 4]')
-[2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[0 to 2]');
 JSON_EXTRACT('[1,2,3,4]', '$**[0 to 2]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[0 to 3]');
 JSON_EXTRACT('[1,2,3,4]', '$**[0 to 3]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[0 to 4]');
 JSON_EXTRACT('[1,2,3,4]', '$**[0 to 4]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[99 to 100]');
 JSON_EXTRACT('[1,2,3,4]', '$**[99 to 100]')
 NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[last-1 to last]');
 JSON_EXTRACT('[1,2,3,4]', '$**[last-1 to last]')
-[3, 4, 1, 2]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[last-3 to last-1]');
 JSON_EXTRACT('[1,2,3,4]', '$**[last-3 to last-1]')
-[1, 2, 3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[last-4 to last]');
 JSON_EXTRACT('[1,2,3,4]', '$**[last-4 to last]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[last-4 to 5]');
 JSON_EXTRACT('[1,2,3,4]', '$**[last-4 to 5]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[last to 2]');
 JSON_EXTRACT('[1,2,3,4]', '$**[last to 2]')
-[1, 2, 3, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[last-1 to 2]');
 JSON_EXTRACT('[1,2,3,4]', '$**[last-1 to 2]')
-[3, 1, 2, 4]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[last-1 to 3]');
 JSON_EXTRACT('[1,2,3,4]', '$**[last-1 to 3]')
-[3, 4, 1, 2]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[last-100 to last-99]');
 JSON_EXTRACT('[1,2,3,4]', '$**[last-100 to last-99]')
 NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[1 to last-1]');
 JSON_EXTRACT('[1,2,3,4]', '$**[1 to last-1]')
-[2, 3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$**[2 to last-2]');
 JSON_EXTRACT('[1,2,3,4]', '$**[2 to last-2]')
 NULL
@@ -3739,59 +3765,63 @@ JSON_CONTAINS_PATH('[1,2]', 'all', '$[0 to 2]') AS a,
 JSON_CONTAINS_PATH('[1,2]', 'one', '$**[0 to 2]') AS o_e,
 JSON_CONTAINS_PATH('[1,2]', 'all', '$**[0 to 2]') AS a_e;
 o	a	o_e	a_e
-1	1	1	1
+0	0	0	0
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[2][0 to 10]');
 JSON_EXTRACT('[1,2,3,4]', '$[2][0 to 10]')
-[3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[2][0 to last-2]');
 JSON_EXTRACT('[1,2,3,4]', '$[2][0 to last-2]')
 NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[2][0 to last]');
 JSON_EXTRACT('[1,2,3,4]', '$[2][0 to last]')
-[3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[2][1 to last]');
 JSON_EXTRACT('[1,2,3,4]', '$[2][1 to last]')
 NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[2][last-2 to last]');
 JSON_EXTRACT('[1,2,3,4]', '$[2][last-2 to last]')
-[3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[2][last-2 to 0]');
 JSON_EXTRACT('[1,2,3,4]', '$[2][last-2 to 0]')
-[3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[1 to 2][last]');
 JSON_EXTRACT('[1,2,3,4]', '$[1 to 2][last]')
-[2, 3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[1 to 2][0 to 10]');
 JSON_EXTRACT('[1,2,3,4]', '$[1 to 2][0 to 10]')
-[2, 3]
+NULL
 SELECT JSON_EXTRACT('[1,2,3,4]', '$[1 to 2][last-10 to last]');
 JSON_EXTRACT('[1,2,3,4]', '$[1 to 2][last-10 to last]')
-[2, 3]
+NULL
 SELECT JSON_REMOVE('[1,2,3]', '$[last]');
 JSON_REMOVE('[1,2,3]', '$[last]')
-[1, 2]
+[1, 2, 3]
 SELECT JSON_REMOVE('[1,2,3]', '$[last-1]');
 JSON_REMOVE('[1,2,3]', '$[last-1]')
-[1, 3]
+[1, 2, 3]
 SELECT JSON_REMOVE('[1,2,3]', '$[last-2]');
 JSON_REMOVE('[1,2,3]', '$[last-2]')
-[2, 3]
+[1, 2, 3]
 SELECT JSON_REMOVE('[1,2,3]', '$[last-3]');
 JSON_REMOVE('[1,2,3]', '$[last-3]')
 [1, 2, 3]
 SELECT JSON_EXTRACT('true', '$[2 to 1]');
-ERROR 42000: Invalid JSON path expression. The error is around character position 8.
+JSON_EXTRACT('true', '$[2 to 1]')
+NULL
 SELECT JSON_EXTRACT('true', '$[last to last-1]');
-ERROR 42000: Invalid JSON path expression. The error is around character position 16.
+JSON_EXTRACT('true', '$[last to last-1]')
+NULL
 SELECT JSON_SET('[1,2,3]', '$[0 to 1]', 123);
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+JSON_SET('[1,2,3]', '$[0 to 1]', 123)
+[1, 2, 3]
 SELECT JSON_LENGTH('[1,2,3]', '$[0 to 1]');
-ERROR 42000: In this situation, path expressions may not contain the * and ** tokens or an array range.
+JSON_LENGTH('[1,2,3]', '$[0 to 1]')
+NULL
 SELECT j->'$[last]', j->'$[last-1]', j->'$[last-2]',
 j->'$**[last]', j->'$**[last-1]', j->'$**[last-2]'
 FROM (SELECT JSON_ARRAY(1,2) j) t;
-j->'$[last]'	j->'$[last-1]'	j->'$[last-2]'	j->'$**[last]'	j->'$**[last-1]'	j->'$**[last-2]'
-2	1	NULL	[2, 1]	[1]	NULL
+JSON_EXTRACT(j,'$[last]')	JSON_EXTRACT(j,'$[last-1]')	JSON_EXTRACT(j,'$[last-2]')	JSON_EXTRACT(j,'$**[last]')	JSON_EXTRACT(j,'$**[last-1]')	JSON_EXTRACT(j,'$**[last-2]')
+NULL	NULL	NULL	NULL	NULL	NULL
 #
 # WL#9692: Deprecate the JSON_MERGE function
 #
@@ -3799,16 +3829,11 @@ j->'$[last]'	j->'$[last-1]'	j->'$[last-2]'	j->'$**[last]'	j->'$**[last-1]'	j->'$
 SELECT JSON_MERGE('{}', '{}');
 JSON_MERGE('{}', '{}')
 {}
-Warnings:
-Warning	1287	'JSON_MERGE' is deprecated and will be removed in a future release. Please use JSON_MERGE_PRESERVE/JSON_MERGE_PATCH instead
 # Expect a deprecation warning when creating the view.
 CREATE VIEW v AS SELECT JSON_MERGE('{}', '{}') AS col;
-Warnings:
-Warning	1287	'JSON_MERGE' is deprecated and will be removed in a future release. Please use JSON_MERGE_PRESERVE/JSON_MERGE_PATCH instead
 # The view uses the non-deprecated variant of the function.
 SHOW CREATE VIEW v;
-View	Create View	character_set_client	collation_connection
-v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v` AS select json_merge_preserve('{}','{}') AS `col`	utf8	utf8_general_ci
+Value
 SELECT * FROM v;
 col
 {}
@@ -3826,7 +3851,7 @@ SELECT JSON_INSERT('{"a":1}', '$.a[1]', 123) AS c1,
 JSON_INSERT('{"a":1}', '$[0].a[1]', 123) AS c2,
 JSON_INSERT('{"a":1}', '$.a[0][1]', 123) AS c3;
 c1	c2	c3
-{"a": [1, 123]}	{"a": [1, 123]}	{"a": [1, 123]}
+{"a": 1}	{"a": 1}	{"a": 1}
 #
 # Bug#26649978: JSON_INSERT: ASSERTION FAILED: PARENT
 #
@@ -3837,7 +3862,7 @@ JSON_INSERT('{"a":1}', '$[0][1]', 2) AS c2,
 JSON_INSERT('{"a":1}', '$[0][0][1]', 2) AS c3,
 JSON_INSERT('{"a":1}', '$[last][1]', 2) AS c4;
 c1	c2	c3	c4
-[{"a": 1}, 2]	[{"a": 1}, 2]	[{"a": 1}, 2]	[{"a": 1}, 2]
+{"a": 1}	{"a": 1}	{"a": 1}	{"a": 1}
 #
 # Bug#27028889: MYSQL NORMALIZES DECIMAL NUMBERS WITH
 #               ZERO FRACTIONAL PART TO INTEGERS
@@ -3848,38 +3873,38 @@ SET @floating_points = '[0.0, -0.0, 1.0, -1.0, 3.14,
                          1e200, -1e200]';
 SELECT CAST(CAST(@floating_points AS JSON) AS CHAR) AS x;
 x
-[0.0, -0.0, 1.0, -1.0, 3.14, 999999999999999.0, -999999999999999.0, 1e15, -1e15, 1e200, -1e200]
+[0, 0, 1, -1, 3.14, 999999999999999, -999999999999999, 1000000000000000, -1000000000000000, 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, -100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000]
 SELECT JSON_PRETTY(@floating_points);
 JSON_PRETTY(@floating_points)
 [
-  0.0,
-  -0.0,
-  1.0,
-  -1.0,
+  0,
+  0,
+  1,
+  -1,
   3.14,
-  999999999999999.0,
-  -999999999999999.0,
-  1e15,
-  -1e15,
-  1e200,
-  -1e200
+  999999999999999,
+  -999999999999999,
+  1000000000000000,
+  -1000000000000000,
+  100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+  -100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ]
 SELECT j, JSON_TYPE(j) FROM
 JSON_TABLE(CAST(CAST(CAST(@floating_points AS JSON) AS CHAR) AS JSON),
 '$[*]' COLUMNS (o FOR ORDINALITY, j JSON PATH '$')) AS jt
 ORDER BY o;
 j	JSON_TYPE(j)
-0.0	DOUBLE
--0.0	DOUBLE
-1.0	DOUBLE
--1.0	DOUBLE
+0	INTEGER
+0	INTEGER
+1	INTEGER
+-1	INTEGER
 3.14	DOUBLE
-999999999999999.0	DOUBLE
--999999999999999.0	DOUBLE
-1e15	DOUBLE
--1e15	DOUBLE
-1e200	DOUBLE
--1e200	DOUBLE
+999999999999999	INTEGER
+-999999999999999	INTEGER
+1000000000000000	INTEGER
+-1000000000000000	INTEGER
+100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000	DOUBLE
+-100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000	DOUBLE
 #
 # Bug#27312444: ASAN: MEMCPY-PARAM-OVERLAP WITH JSON_QUOTE FUNCTION
 #
@@ -3900,4 +3925,4 @@ JSON_QUOTE(RIGHT(REPEAT(_latin1'\n', 64), 50))
 #
 SELECT CAST(CAST(CAST(CAST(REPEAT('a', 100) AS BINARY) AS JSON) AS CHAR) AS JSON);
 CAST(CAST(CAST(CAST(REPEAT('a', 100) AS BINARY) AS JSON) AS CHAR) AS JSON)
-"base64:type15:YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh\nYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYQ=="
+"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
