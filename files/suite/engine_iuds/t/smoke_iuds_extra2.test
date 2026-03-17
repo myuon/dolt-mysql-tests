@@ -1,0 +1,12 @@
+--disable_warnings
+DROP TABLE IF EXISTS t_smoke2;
+--enable_warnings
+
+CREATE TABLE t_smoke2(id INT PRIMARY KEY, v VARCHAR(20));
+INSERT INTO t_smoke2 VALUES (1, 'a'), (2, 'b'), (3, 'c');
+
+UPDATE t_smoke2 SET v='bb' WHERE id=2;
+DELETE FROM t_smoke2 WHERE id=3;
+
+SELECT * FROM t_smoke2 ORDER BY id;
+DROP TABLE t_smoke2;
