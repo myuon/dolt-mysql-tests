@@ -70441,7 +70441,7 @@ SELECT * FROM t18 WHERE c2=0;
 c1	c2
 EXPLAIN SELECT * FROM t18 WHERE c2=0;
 id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
-1	SIMPLE	NULL	NULL	ALL	NULL	NULL	NULL	NULL	1	100.00	NULL
+1	SIMPLE	t18	NULL	ALL	NULL	NULL	NULL	NULL	2	100.00	NULL
 SET sql_mode= default;
 INSERT INTO t18 VALUES('SIZE','SMALL2');
 SELECT * FROM t18 WHERE c2=0;
