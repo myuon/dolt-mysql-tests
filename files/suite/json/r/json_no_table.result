@@ -3576,7 +3576,7 @@ NULL
 # since a check for null return value was added.
 #
 DO BIT_COUNT(COMPRESS(1) << JSON_DEPTH(1));
-ERROR 42000: unsupported statement type: *sqlparser.OtherAdmin
+ERROR 22032: Invalid data type for JSON data in argument 1 to function json_depth; a JSON string or JSON type is required.
 #
 # Bug#25516881: JSON_UNQUOTE RETURNS WRONG RESULT WHEN INPUT IS UTF-16
 #
