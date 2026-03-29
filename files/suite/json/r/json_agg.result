@@ -306,7 +306,7 @@ EXPLAIN
   "query_block": {
     "select_id": 1,
     "cost_info": {
-      "query_cost": "1.05"
+      "query_cost": "9.05"
     },
     "table": {
       "table_name": "t1",
@@ -599,24 +599,45 @@ EXPLAIN
   "query_block": {
     "select_id": 1,
     "cost_info": {
-      "query_cost": "1.05"
+      "query_cost": "0.35"
     },
     "table": {
-      "table_name": "t",
+      "table_name": "dual",
       "access_type": "ALL",
       "rows_examined_per_scan": 1,
       "rows_produced_per_join": 1,
       "filtered": "100.00",
       "cost_info": {
         "read_cost": "0.25",
-        "eval_cost": "0.80",
-        "prefix_cost": "1.05",
+        "eval_cost": "0.10",
+        "prefix_cost": "0.35",
         "data_read_per_join": "56"
-      },
-      "used_columns": [
-        "b"
-      ]
       }
+    },
+    "attached_subqueries": [
+      {
+        "select_id": 3,
+        "cost_info": {
+          "query_cost": "0.35"
+        },
+        "table": {
+          "table_name": "t",
+          "access_type": "ALL",
+          "rows_examined_per_scan": 1,
+          "rows_produced_per_join": 1,
+          "filtered": "100.00",
+          "cost_info": {
+            "read_cost": "0.25",
+            "eval_cost": "0.10",
+            "prefix_cost": "0.35",
+            "data_read_per_join": "8"
+          },
+          "used_columns": [
+            "a"
+          ]
+        }
+      }
+    ]
   }
 }
 SELECT (SELECT 1 FROM t WHERE JSON_ARRAYAGG(1 IN (SELECT 1 FROM t)));
